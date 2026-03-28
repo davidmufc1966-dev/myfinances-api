@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const app = express();
@@ -39,19 +40,24 @@ app.get('/stocks/us', auth, async (req, res) => {
   }
 });
 
-// ── UK/EU Stocks (Alpha Vantage) ─────────────────────────────────────
+// ── UK/EU Stocks (Twelve Data) ───────────────────────────────────────
 app.get('/stocks/uk', auth, async (req, res) => {
   const { symbol } = req.query;
   if (!symbol) return res.status(400).json({ error: 'symbol required' });
-  if (!AV_KEY) return res.status(503).json({ error: 'Alpha Vantage key not configured' });
+  if (!TWELVE_KEY) return res.status(503).json({ error: 'Twelve Data key not configured' });
 
   try {
-    const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${AV_KEY}`;
+    const url = `https://api.twelvedata.com/price?symbol=${symbol}&apikey=${TWELVE_KEY}`;
     const r = await fetch(url);
     const data = await r.json();
-    res.json(data);
+    // Return in Alpha Vantage format so app code still works
+    if (data.price) {
+      res.json({ 'Global Quote': { '05. price': data.price } });
+    } else {
+      res.json(data);
+    }
   } catch (e) {
-    res.status(500).json({ error: 'Failed to fetch UK stock prices' });
+    res.status(500).json({ error: 'Failed to fetch UK/EU stock prices' });
   }
 });
 
